@@ -40,9 +40,9 @@ let notes = [
 ];
 
 //   GET root
-app.get("/", (req, res) => {
-  res.end("<h1>Hello world!</h1>");
-});
+// app.get("/", (req, res) => {
+//   res.end("<h1>Hello world!</h1>");
+// });
 
 //   GET all notes
 app.get("/api/notes", (req, res) => {
