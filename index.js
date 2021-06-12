@@ -1,11 +1,12 @@
 const express = require("express");
 const app = express();
 
+app.use(express.static("build"));
+
 const cors = require("cors");
 app.use(cors());
 
 // will find index.html in /build then show it
-app.use(express.static('build'))
 
 // parses json to js object,
 // then attaches it to request body
