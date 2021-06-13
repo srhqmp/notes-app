@@ -1,81 +1,53 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
+
+const morganBody = require("morgan-body");
+morganBody(app);
 
 app.use(express.static("build"));
 
 const cors = require("cors");
 app.use(cors());
 
-// will find index.html in /build then show it
-
-// parses json to js object,
-// then attaches it to request body
-//before the route handler is called
 app.use(express.json());
 
-let notes = [
-  {
-    id: 1,
-    content: "HTML is easy",
-    date: "2019-05-30T17:30:31.098Z",
-    important: true,
-  },
-  {
-    id: 2,
-    content: "Browser can execute only Javascript",
-    date: "2019-05-30T18:39:34.091Z",
-    important: false,
-  },
-  {
-    id: 3,
-    content: "GET and POST are the most important methods of HTTP protocol",
-    date: "2019-05-30T19:20:14.298Z",
-    important: true,
-  },
-  {
-    id: 4,
-    content: "GET and POST are the most important methods of HTTP protocol",
-    date: "2019-05-30T19:20:14.298Z",
-    important: true,
-  },
-];
-
-//   GET root
-// app.get("/", (req, res) => {
-//   res.end("<h1>Hello world!</h1>");
-// });
+const Note = require("./models/note");
 
 //   GET all notes
-app.get("/api/notes", (req, res) => {
-  res.json(notes);
+app.get("/api/notes", (req, res, next) => {
+  Note.find({})
+    .then((notes) => {
+      res.json(notes);
+    })
+    .catch((err) => next(err));
 });
 
 //   GET specific note
-app.get("/api/notes/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const note = notes.find((note) => note.id === id);
-
-  if (note) {
-    res.json(note);
-  } else {
-    res.status(404).end();
-  }
+app.get("/api/notes/:id", (req, res, next) => {
+  const id = req.params.id;
+  Note.findById(id)
+    .then((note) => {
+      if (note) {
+        res.json(note);
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch((err) => next(err));
 });
 
 // DELETE specific note
 app.delete("/api/notes/:id", (req, res) => {
-  const id = Number(req.params.id);
-  notes = notes.filter((note) => note.id !== id);
-  res.status(204).end();
+  const id = req.params.id;
+
+  Note.findByIdAndRemove(id)
+    .then(() => res.status(204).end())
+    .catch((err) => next(err));
 });
 
-const generateId = () => {
-  const maxId = notes.length > 0 ? Math.max(...notes.map((n) => n.id)) : 0;
-  return maxId + 1;
-};
-
 // POST new note
-app.post("/api/notes/", (req, res) => {
+app.post("/api/notes/", (req, res, next) => {
   const note = req.body;
 
   if (!note.content) {
@@ -83,18 +55,58 @@ app.post("/api/notes/", (req, res) => {
       error: "content missing",
     });
   } else {
-    const newNote = {
-      id: generateId(),
+    const newNote = new Note({
       content: note.content,
       date: new Date(),
       important: note.important || false,
-    };
-    notes = notes.concat(newNote);
-    return res.json(newNote);
+    });
+
+    newNote
+      .save()
+      .then((note) => {
+        return res.json(note);
+      })
+      .catch((err) => next(err));
   }
 });
 
-const PORT = process.env.PORT || 3001;
+//UPDATE a note
+app.put("/api/notes/:id", (req, res, next) => {
+  const body = req.body;
+  const id = req.params.id;
+
+  const note = {
+    content: body.content,
+    important: body.important,
+  };
+
+  Note.findByIdAndUpdate(id, note, { new: true })
+    .then((updatedNote) => {
+      res.json(updatedNote);
+    })
+    .catch((err) => next(err));
+});
+
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: "unknown endpoint" });
+};
+app.use(unknownEndpoint);
+
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return res.status(400).send({ error: "malformatted id" });
+  }
+  if (error.name === "ValidationError") {
+    res.status(400).send({ error: "note should be minimum of 5 characters" });
+  }
+
+  next(error);
+};
+app.use(errorHandler);
+
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
