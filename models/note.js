@@ -1,22 +1,4 @@
-const mongoose = require("mongoose");
-
-const url = process.env.MONGODB_URI;
-
-console.log("connecting to", url);
-
-mongoose
-  .connect(url, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false,
-    useCreateIndex: true,
-  })
-  .then(() => {
-    console.log("connected to mongodb");
-  })
-  .catch((err) => {
-    console.log(err.message);
-  });
+const mongoose = require('mongoose')
 
 // creating schema for note
 const noteSchema = new mongoose.Schema({
@@ -30,15 +12,19 @@ const noteSchema = new mongoose.Schema({
     required: true,
   },
   important: Boolean,
-});
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+})
 
 //format return object id and version
-noteSchema.set("toJSON", {
+noteSchema.set('toJSON', {
   transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
-    delete returnedObject._id;
-    delete returnedObject.__v;
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
   },
-});
+})
 
-module.exports = mongoose.model("Note", noteSchema);
+module.exports = mongoose.model('Note', noteSchema)
