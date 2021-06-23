@@ -7,8 +7,8 @@ Content-Type: application/json
 
 {
     "notes": [],
-    "username": "meme",
-    "name": "Saraah",
-    "password": "secretpassword"
+    "username": "sarah",
+    "name": "Sarah Q.",
+    "password": "sarah"
 }
 
